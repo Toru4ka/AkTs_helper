@@ -206,3 +206,4 @@ if __name__ == '__main__':
     collection_links = [f'{base_url}{collection}.html' for collection in collections]
     asyncio.run(main(collection_links))
     combine_files(OUTPUT_FILES_DIR)
+
