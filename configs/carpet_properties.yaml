@@ -1,0 +1,18 @@
+Форма:
+ прямоугольник:
+    annotation_form: Прямоугольный
+    barcode_form: ST
+ круг:
+    annotation_form: Круглый
+    barcode_form: KG
+ овал:
+    annotation_form: Овальный
+    barcode_form: OV
+
+Страна:
+ Турция:
+    annotation_country: Турецкий
+ Россия:
+    annotation_country: Российский
+ Бельгия:
+    annotation_country: Бельгийские
