@@ -1,5 +1,6 @@
 .idea
 leftovers/output_files/*
+!leftovers/example_dir/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
