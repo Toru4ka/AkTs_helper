@@ -63,7 +63,7 @@ def get_size_grid_table(soup):
     return df_cleaned
 
 def multiply_packaging_columns(df):
-    pattern = re.compile(r'упаковка по (\д+) шт\.')
+    pattern = re.compile(r'упаковка по (\d+) шт\.')
     for column in df.columns:
         match = pattern.search(column)
         if match:
