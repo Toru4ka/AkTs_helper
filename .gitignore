@@ -1,6 +1,6 @@
 .idea
 leftovers/output_files/*.csv
-
+!leftovers/output_files/leftovers.csv
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
