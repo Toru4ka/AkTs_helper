@@ -3,7 +3,7 @@ from fastapi.responses import FileResponse, HTMLResponse
 from pathlib import Path
 import asyncio
 from leftovers.leftovers_async import run_generation
-from invoices.invoice_processor import process_file
+#from invoices.invoice_processor import process_file
 
 app = FastAPI()
 

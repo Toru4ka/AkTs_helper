@@ -1,4 +1,3 @@
-# Данный скрипт перепиывается для увеличения производительности системы а так же для увеличения скорости модификации и поддрежки
 import time
 import numpy
 import pandas as pd
@@ -6,6 +5,8 @@ import re
 from datetime import datetime
 import os
 from pathlib import Path
+from leftovers.leftovers_async import remove_after_last_digit
+from leftovers.leftovers_async import transform_color
 
 pd.set_option('display.max_rows', 1000,
               'display.max_columns', 1000,
@@ -25,18 +26,46 @@ def split_string(df, col):
     return df
 
 
+# Применение функции к вторым элементам массивов
+def remove_second_element(arr):
+    if len(arr) > 1:
+        arr.pop(1)
+    return arr
+
+
+def trim_carpets_forms(form):
+    form = form[:2]
+    if form == 'DA':
+        form = 'KG'
+    return form
+
+
+def update_nomenclature(row):
+    nomenclature = row['Номенклатура']
+    width_length = f"{str(row['Ширина']).replace('.', '')}{str(row['Длина']).replace('.', '')}"
+    nomenclature[2] = width_length
+    return nomenclature
+
+
+def create_akts_barcode(arr):
+    barcode = f'{arr[1]}-{arr[3]}-{arr[2]}-{arr[0]}-{arr[4]}'
+    return barcode
+
+
 def get_invoice_table(input_path):
     df = pd.read_excel(input_path, skiprows=6)
     df.drop(columns=[col for col in df.columns if col.startswith('Unnamed:')], inplace=True)
     df.dropna(subset=['Ширина'], inplace=True)
     df['Штрихкод'] = df['Штрихкод'].astype(int)
     df = split_string(df, 'Номенклатура')
-    # TODO второй элемент массива в Номенклатура мы удаляем
-    # TODO для кода цвета применяем регулярку
-    # TODO для размера нужно что бы было 0815 (0,8*1,5) и 1020 (1*2)
-    # TODO для формы ну стандартно
-    # TODO для цвета супер стандартно
-    # TODO птомо это все реиндексируем и делаем - между элементами массива и получаем на выходе строку с штрихкодом AkTs
+    df['Номенклатура'] = df['Номенклатура'].apply(remove_second_element)
+    df['Номенклатура'] = df['Номенклатура'].apply(lambda x: ', '.join(x))
+    df['Номенклатура'] = df['Номенклатура'].apply(lambda x: x.split(', '))
+    df['Номенклатура'] = df['Номенклатура'].apply(lambda x: [x[0], remove_after_last_digit(x[1])] + x[2:])
+    df['Номенклатура'] = df.apply(update_nomenclature, axis=1)
+    df['Номенклатура'] = df['Номенклатура'].apply(lambda x: x[:-2] + [trim_carpets_forms(x[-2])] + [x[-1]])
+    df['Номенклатура'] = df['Номенклатура'].apply(lambda x: x[:-1] + [transform_color(x[-1])])
+    df['Номенклатура'] = df['Номенклатура'].apply(lambda x: create_akts_barcode(x))
     print(df)
 
 
