@@ -10,7 +10,7 @@ import csv
 import fake_useragent
 import logging
 import colorlog
-import shutil
+from utils.file_utils import clear_folder
 
 pd.set_option('display.max_rows', 999)
 pd.set_option('display.max_columns', 999)
@@ -18,6 +18,7 @@ pd.set_option('display.max_columns', 999)
 BASE_DIR = Path(__file__).resolve().parent.parent
 CONFIG_DIR = BASE_DIR / 'configs'
 OUTPUT_FILES_DIR = BASE_DIR / 'leftovers' / 'output_files'
+OUTPUT_FILES_DIR.mkdir(exist_ok=True)
 
 # Настройка логирования с colorlog
 log_colors_config = {
@@ -265,16 +266,9 @@ def combine_files(input_dir):
 
     combined_df.to_csv(OUTPUT_FILES_DIR / 'leftovers.csv', index=False, mode='w', sep=';')
 
-def clear_output_folder(output_folder):
-    # Удаляем все файлы и папки в указанной директории
-    for item in output_folder.iterdir():
-        if item.is_dir():
-            shutil.rmtree(item)
-        else:
-            item.unlink()
 
 def run_generation():
-    clear_output_folder(OUTPUT_FILES_DIR)
+    clear_folder(OUTPUT_FILES_DIR)
     collections = load_config(CONFIG_DIR / 'collections.yaml')['collections']
     base_url = load_config(CONFIG_DIR / 'secrets.yaml')['venera_leftovers_link']
     collection_links = [f'{base_url}{collection}.html' for collection in collections]

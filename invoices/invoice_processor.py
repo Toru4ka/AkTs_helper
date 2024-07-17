@@ -13,9 +13,11 @@ pd.set_option('display.max_rows', 1000,
               'display.max_colwidth', 1000)
 
 BASE_DIR = Path(__file__).resolve().parent.parent
-OUTPUT_FILES_DIR = BASE_DIR / 'invoices' / 'output_files'
-INPUT_FILES_DIR = BASE_DIR / 'invoices' / 'input_files'
 CONFIG_DIR = BASE_DIR / 'configs'
+OUTPUT_FILES_DIR = BASE_DIR / 'invoices' / 'output_files'
+OUTPUT_FILES_DIR.mkdir(exist_ok=True)
+INPUT_FILES_DIR = BASE_DIR / 'invoices' / 'input_files'
+INPUT_FILES_DIR.mkdir(exist_ok=True)
 
 def fix_and_resave_excel(input_path):
     # Создаем временную папку
