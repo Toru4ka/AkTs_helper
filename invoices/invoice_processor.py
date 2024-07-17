@@ -138,7 +138,7 @@ def replace_pattern(nomenclature, patterns):
     return [patterns.get(item, item) for item in nomenclature]
 
 
-def process_file(input_path,output_path):
+def process_file(input_path, output_path):
     df = read_excel_with_fix(input_path, skiprows=6)
     df.drop(columns=[col for col in df.columns if col.startswith('Unnamed:')], inplace=True)
     df.dropna(subset=['Ширина'], inplace=True)

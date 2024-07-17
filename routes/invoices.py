@@ -1,7 +1,8 @@
 from fastapi import APIRouter, HTTPException, UploadFile, File
 from fastapi.responses import FileResponse
 from pathlib import Path
-from utils.file_utils import save_uploaded_file, process_file
+from utils.file_utils import save_uploaded_file
+from invoices.invoice_processor import process_file
 
 router = APIRouter()
 
