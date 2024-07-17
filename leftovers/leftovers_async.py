@@ -20,7 +20,6 @@ CONFIG_DIR = BASE_DIR / 'configs'
 OUTPUT_FILES_DIR = BASE_DIR / 'leftovers' / 'output_files'
 
 # Настройка логирования с colorlog
-log_file = BASE_DIR / 'leftovers' / 'leftovers.log'
 log_colors_config = {
     'DEBUG': 'white',
     'INFO': 'white',
@@ -33,13 +32,10 @@ formatter = colorlog.ColoredFormatter(
     log_colors=log_colors_config
 )
 
-file_handler = logging.FileHandler(log_file)
-file_handler.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))
-
 console_handler = logging.StreamHandler()
 console_handler.setFormatter(formatter)
 
-logging.basicConfig(level=logging.INFO, handlers=[file_handler, console_handler])
+logging.basicConfig(level=logging.INFO, handlers=[console_handler])
 logger = logging.getLogger(__name__)
 
 
