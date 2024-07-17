@@ -159,6 +159,3 @@ def process_file(input_path, output_path):
     df.to_excel(output_path, index=False)
 
 
-process_file('/Users/toru/PycharmProjects/AkTs_helper/invoices/input_files/17,07,24 Литовцев.xlsx',
-             '/Users/toru/PycharmProjects/AkTs_helper/invoices/output_files/reco_17,07,24 Литовцев.xlsx')
-
