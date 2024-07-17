@@ -142,7 +142,7 @@ def process_file(input_path, output_path):
     df = read_excel_with_fix(input_path, skiprows=6)
     df.drop(columns=[col for col in df.columns if col.startswith('Unnamed:')], inplace=True)
     df.dropna(subset=['Ширина'], inplace=True)
-    df['Штрихкод'] = df['Штрихкод'].astype(int)
+    df['Штрихкод'] = df['Штрихкод'].astype(pd.Int64Dtype())
     df = split_string(df, 'Номенклатура')
     df['Номенклатура'] = df['Номенклатура'].apply(remove_second_element)
     df['Номенклатура'] = df['Номенклатура'].apply(lambda x: ', '.join(x))
@@ -159,5 +159,6 @@ def process_file(input_path, output_path):
     df.to_excel(output_path, index=False)
 
 
-
+process_file('/Users/toru/PycharmProjects/AkTs_helper/invoices/input_files/17,07,24 Литовцев.xlsx',
+             '/Users/toru/PycharmProjects/AkTs_helper/invoices/output_files/reco_17,07,24 Литовцев.xlsx')
 
