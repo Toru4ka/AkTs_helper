@@ -263,7 +263,7 @@ def combine_files(input_dir):
             logger.error(f"Error reading {file}: {e}")
         except Exception as e:
             logger.error(f"An unexpected error occurred with {file}: {e}")
-
+    combined_df = combined_df.set_axis(['carpet', 'count'], axis=1)
     combined_df.to_csv(OUTPUT_FILES_DIR / 'leftovers.csv', index=False, mode='w', sep=';')
 
 
