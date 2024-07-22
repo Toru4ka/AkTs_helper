@@ -202,6 +202,18 @@ def transform_quantity_with_limits(df, collection_name):
         df['кол-во'] = df['кол-во'].clip(lower=0)
     return df
 
+
+def subtract_one_from_column(df, column_name):
+    """
+    Функция для вычитания 1 из каждой ячейки в указанном столбце.
+
+    :param df: DataFrame, в котором нужно изменить данные
+    :param column_name: Имя столбца, из которого нужно вычесть 1
+    :return: Измененный DataFrame
+    """
+    df[column_name] = df[column_name] - 1
+    return df
+
 def create_barcode(df, collection, collection_url):
     collection_name = collection_url.replace(load_config(CONFIG_DIR / 'secrets.yaml')['venera_leftovers_link'], '').replace('.html', '')
     pattern_replacements = load_config(CONFIG_DIR / 'pattern_replacements.yaml')['patterns']
@@ -212,6 +224,7 @@ def create_barcode(df, collection, collection_url):
     df_melted['Рис.'] = list(map(lambda x: remove_after_last_digit(x), df_melted['Рис.']))
     df_melted['Цвет'] = list(map(lambda x: transform_color(x), df_melted['Цвет']))
     df_melted = insert_name_of_collection_column(df_melted, collection)
+    df_melted = subtract_one_from_column(df_melted, 'кол-во')
     df_melted = transform_quantity_with_limits(df_melted, collection_name)
     df_melted = transform_quantity_with_wight(df_melted, (df_melted['Размер'].str[:2].astype(int) <= 8), 1)
     df_melted = transform_quantity_with_wight(df_melted, (df_melted['Размер'].str[:2].astype(int) > 8) & (df_melted['Размер'].str[:2].astype(int) <= 12), 1)
