@@ -7,9 +7,5 @@ docker build -t akts_helper:ver .
 ```
 - **Запуск контейнера**: После сборки контейнера, запустите его:
 ```shell
-docker run -p 8080:8080 akts_helper
-```
-- Если вы используете docker-compose, просто выполните:
-```shell
-docker-compose up --build
+docker run -d --name akts_helper -p 8080:8080 toru4ka/akts_helper:ver
 ```
