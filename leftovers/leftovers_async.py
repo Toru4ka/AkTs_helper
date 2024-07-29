@@ -136,7 +136,7 @@ def replace_values(df, column, replacements):
     return df
 
 def transform_form_to_barcode_form(carpet_form):
-    with open(CONFIG_DIR / 'carpet_properties.yaml', 'r') as file:
+    with open(CONFIG_DIR / 'users_configs' / 'carpet_properties.yaml', 'r') as file:
         carpet_properties = yaml.safe_load(file)
     carpet_forms = carpet_properties['Форма']
     if carpet_form in carpet_forms:
@@ -179,7 +179,7 @@ def transform_quantity_with_wight(df, mask, limit):
 
 def transform_quantity_with_limits(df, collection_name):
     try:
-        with open(CONFIG_DIR / 'collections_limits.yaml', 'r') as file:
+        with open(CONFIG_DIR / 'users_configs' / 'collections_limits.yaml', 'r') as file:
             collections_limits = yaml.safe_load(file)['collection']
     except Exception as e:
         print(f"Error reading configuration file: {e}")
@@ -216,7 +216,7 @@ def subtract_one_from_column(df, column_name):
 
 def create_barcode(df, collection, collection_url):
     collection_name = collection_url.replace(load_config(CONFIG_DIR / 'secrets.yaml')['venera_leftovers_link'], '').replace('.html', '')
-    pattern_replacements = load_config(CONFIG_DIR / 'pattern_replacements.yaml')['patterns']
+    pattern_replacements = load_config(CONFIG_DIR / 'users_configs' / 'pattern_replacements.yaml')['patterns']
     df_melted = df.melt(id_vars=['Рис.', 'Форма', 'Цвет'], var_name='Размер', value_name='кол-во')
     df_melted['Форма'] = list(map(lambda x: transform_form_to_barcode_form(x), df_melted['Форма']))
     df_melted['Размер'] = list(map(lambda x: transform_size(x), df_melted['Размер']))
@@ -264,6 +264,21 @@ async def main(urls):
         await session.close()
 
 
+def remove_blacklisted_barcodes(df):
+    # Чтение списка баркодов из YAML файла
+    blacklist = load_config(CONFIG_DIR / 'users_configs' / 'barcode_blacklist.yaml')
+
+    # Удаление строк, где значение в столбце 'carpet' есть в списке баркодов
+    barcodes = blacklist.get('barcodes', [])
+
+    if not barcodes:
+        return df
+
+    df_filtered = df[~df['carpet'].isin(blacklist['barcodes'])]
+
+    return df_filtered
+
+
 def combine_files(input_dir):
     all_files = list(Path(input_dir).glob("*.csv"))
     combined_df = pd.DataFrame()
@@ -277,12 +292,13 @@ def combine_files(input_dir):
         except Exception as e:
             logger.error(f"An unexpected error occurred with {file}: {e}")
     combined_df = combined_df.set_axis(['carpet', 'count'], axis=1)
+    combined_df = remove_blacklisted_barcodes(combined_df)
     combined_df.to_csv(OUTPUT_FILES_DIR / 'leftovers.csv', index=False, mode='w', sep=';')
 
 
 def run_generation():
     clear_folder(OUTPUT_FILES_DIR)
-    collections = load_config(CONFIG_DIR / 'collections.yaml')['collections']
+    collections = load_config(CONFIG_DIR / 'users_configs' / 'collections.yaml')['collections']
     base_url = load_config(CONFIG_DIR / 'secrets.yaml')['venera_leftovers_link']
     collection_links = [f'{base_url}{collection}.html' for collection in collections]
     asyncio.run(main(collection_links))
