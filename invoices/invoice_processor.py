@@ -149,7 +149,7 @@ def process_file(input_path, output_path):
     df['Номенклатура'] = df['Номенклатура'].apply(remove_second_element)
     df['Номенклатура'] = df['Номенклатура'].apply(lambda x: ', '.join(x))
     df['Номенклатура'] = df['Номенклатура'].apply(lambda x: x.split(', '))
-    patterns = load_config(CONFIG_DIR / 'pattern_replacements.yaml')['patterns']
+    patterns = load_config(CONFIG_DIR / 'users_configs' / 'pattern_replacements.yaml')['patterns']
     df['Номенклатура'] = df['Номенклатура'].apply(lambda x: replace_pattern(x, patterns))
     df['Номенклатура'] = df['Номенклатура'].apply(lambda x: [x[0], remove_after_last_digit(x[1])] + x[2:])
     df['Номенклатура'] = df.apply(update_nomenclature, axis=1)
