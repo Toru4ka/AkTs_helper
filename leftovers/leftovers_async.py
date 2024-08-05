@@ -6,14 +6,15 @@ from io import StringIO
 from pathlib import Path
 from bs4 import BeautifulSoup
 import re
-import csv
 import fake_useragent
 import logging
 import colorlog
 from utils.file_utils import clear_folder
 
-pd.set_option('display.max_rows', 999)
-pd.set_option('display.max_columns', 999)
+pd.set_option('display.max_rows', 1000,
+              'display.max_columns', 1000,
+              'display.width', 1000,
+              'display.max_colwidth', 1000)
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 CONFIG_DIR = BASE_DIR / 'configs'
@@ -39,7 +40,6 @@ console_handler.setFormatter(formatter)
 logging.basicConfig(level=logging.INFO, handlers=[console_handler])
 logger = logging.getLogger(__name__)
 
-
 def load_config(config_file):
     with open(config_file, 'r') as file:
         config = yaml.safe_load(file)
@@ -62,7 +62,7 @@ def clean_cell(cell):
     if pd.isna(cell) or cell == '':
         return 0
     elif isinstance(cell, str):
-        return cell.replace(' / В корзину', '')
+        return cell.split(' ')[0]
     return cell
 
 async def get_size_grid_page(url, session):
@@ -202,15 +202,7 @@ def transform_quantity_with_limits(df, collection_name):
         df['кол-во'] = df['кол-во'].clip(lower=0)
     return df
 
-
 def subtract_one_from_column(df, column_name):
-    """
-    Функция для вычитания 1 из каждой ячейки в указанном столбце.
-
-    :param df: DataFrame, в котором нужно изменить данные
-    :param column_name: Имя столбца, из которого нужно вычесть 1
-    :return: Измененный DataFrame
-    """
     df[column_name] = df[column_name] - 1
     return df
 
@@ -228,7 +220,6 @@ def create_barcode(df, collection, collection_url):
     df_melted = transform_quantity_with_limits(df_melted, collection_name)
     df_melted = transform_quantity_with_wight(df_melted, (df_melted['Размер'].str[:2].astype(int) <= 8), 1)
     df_melted = transform_quantity_with_wight(df_melted, (df_melted['Размер'].str[:2].astype(int) > 8) & (df_melted['Размер'].str[:2].astype(int) <= 12), 1)
-    print(df_melted)
     df_melted['barcode'] = df_melted.apply(lambda row:
                                            f'{row["Рис."]}-'
                                            f'{row["Форма"]}-'
@@ -240,7 +231,7 @@ def create_barcode(df, collection, collection_url):
     df_melted = df_melted[['barcode', 'кол-во']]
     return df_melted
 
-async def process_collection(url_size_grid_page, session):
+async def process_collection(url_size_grid_page, session, combined_df_list):
     try:
         size_grid_soup = await get_size_grid_page(url_size_grid_page, session)
         collection_name = get_size_grid_collection_name(size_grid_soup)
@@ -249,58 +240,39 @@ async def process_collection(url_size_grid_page, session):
         df_size_grid_page = merge_duplicate_sizes(df_size_grid_page)
         df_size_grid_page = remove_samples(df_size_grid_page)
         df_size_grid_page = create_barcode(df_size_grid_page, collection_name, url_size_grid_page)
-        output_path = OUTPUT_FILES_DIR / f'{collection_name}_output_grid_page.csv'
-        df_size_grid_page.to_csv(output_path, index=False, sep=';', quoting=csv.QUOTE_NONE, mode='w')
-        logger.info(f'Saved to {output_path}')
+        combined_df_list.append(df_size_grid_page)
+        logger.info(f'Processed {collection_name}')
     except Exception as e:
         logger.error(f'Error processing collection {url_size_grid_page}: {str(e)}')
 
 async def main(urls):
     session = await venera_auth(CONFIG_DIR / 'secrets.yaml')
+    combined_df_list = []
     try:
-        tasks = [process_collection(url, session) for url in urls]
+        tasks = [process_collection(url, session, combined_df_list) for url in urls]
         await asyncio.gather(*tasks)
     finally:
         await session.close()
-
+    return combined_df_list
 
 def remove_blacklisted_barcodes(df):
-    # Чтение списка баркодов из YAML файла
     blacklist = load_config(CONFIG_DIR / 'users_configs' / 'barcode_blacklist.yaml')
-
-    # Удаление строк, где значение в столбце 'carpet' есть в списке баркодов
     barcodes = blacklist.get('barcodes', [])
-
     if not barcodes:
         return df
-
-    df_filtered = df[~df['carpet'].isin(blacklist['barcodes'])]
-
+    df_filtered = df[~df['carpet'].isin(barcodes)]
     return df_filtered
 
-
-def combine_files(input_dir):
-    all_files = list(Path(input_dir).glob("*.csv"))
-    combined_df = pd.DataFrame()
-
-    for file in all_files:
-        try:
-            df = pd.read_csv(file, sep=';')
-            combined_df = pd.concat([combined_df, df], ignore_index=True)
-        except pd.errors.ParserError as e:
-            logger.error(f"Error reading {file}: {e}")
-        except Exception as e:
-            logger.error(f"An unexpected error occurred with {file}: {e}")
+def combine_dataframes(df_list):
+    combined_df = pd.concat(df_list, ignore_index=True)
     combined_df = combined_df.set_axis(['carpet', 'count'], axis=1)
     combined_df = remove_blacklisted_barcodes(combined_df)
-    combined_df.to_csv(OUTPUT_FILES_DIR / 'leftovers.csv', index=False, mode='w', sep=';')
-
+    combined_df.to_csv(OUTPUT_FILES_DIR / 'leftovers.csv', index=False, sep=';')
 
 def run_generation():
     clear_folder(OUTPUT_FILES_DIR)
     collections = load_config(CONFIG_DIR / 'users_configs' / 'collections.yaml')['collections']
     base_url = load_config(CONFIG_DIR / 'secrets.yaml')['venera_leftovers_link']
     collection_links = [f'{base_url}{collection}.html' for collection in collections]
-    asyncio.run(main(collection_links))
-    combine_files(OUTPUT_FILES_DIR)
-
+    combined_df_list = asyncio.run(main(collection_links))
+    combine_dataframes(combined_df_list)
