@@ -10,7 +10,7 @@ document.getElementById('download-btn').addEventListener('click', function() {
                     const a = document.createElement('a');
                     a.style.display = 'none';
                     a.href = url;
-                    a.download = 'file.txt';  // Имя файла, под которым он будет сохранен
+                    a.download = 'leftovers.csv';  // Имя файла, под которым он будет сохранен
                     document.body.appendChild(a);
                     a.click();
                     window.URL.revokeObjectURL(url);
