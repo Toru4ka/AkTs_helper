@@ -62,7 +62,7 @@ def clean_cell(cell):
     if pd.isna(cell) or cell == '':
         return 0
     elif isinstance(cell, str):
-        return cell.split(' ')[0]
+        return cell.split('  / В корзину')[0]
     return cell
 
 async def get_size_grid_page(url, session):
@@ -78,14 +78,16 @@ def get_size_grid_table(soup):
     table_str = str(table)
     tables = pd.read_html(StringIO(table_str))
     df = tables[0]
+    print(df)
     df_cleaned = df.map(clean_cell)
-    for column in df_cleaned.columns:
+    for column in df_cleaned.columns[3:]:
         try:
             df_cleaned[column] = pd.to_numeric(df_cleaned[column])
         except ValueError:
             pass
     if 'Unnamed: 0' in df_cleaned.columns:
         df_cleaned = df_cleaned.drop(columns=['Unnamed: 0'])
+    print(df_cleaned)
     return df_cleaned
 
 def multiply_packaging_columns(df):
