@@ -19,18 +19,7 @@ document.getElementById('download-btn').addEventListener('click', function() {
                     const audio = document.getElementById('success-sound');
                     audio.currentTime = 0;  // Перематываем звук в начало
                     audio.play();
-                    //document.getElementById('success-sound').play();
 
-                    // Отображение уведомления
-                    //alert('Файл успешно скачан!');
-                    //toastr
-                    //toastr.success('File downloaded successfully!', 'Success');
-                    // Swal.fire({
-                    //     title: 'Success!',
-                    //     text: 'File downloaded successfully!',
-                    //     icon: 'success',
-                    //     confirmButtonText: 'OK'
-                    // });
                     swal({
                         title: 'Success!',
                         text: 'File downloaded successfully!',

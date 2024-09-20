@@ -271,10 +271,10 @@ def combine_dataframes(df_list):
     combined_df = remove_blacklisted_barcodes(combined_df)
     combined_df.to_csv(OUTPUT_FILES_DIR / 'leftovers.csv', index=False, sep=';')
 
-def run_generation():
+def run_generation(warehouse):
     clear_folder(OUTPUT_FILES_DIR)
     collections = load_config(CONFIG_DIR / 'users_configs' / 'collections.yaml')['collections']
     base_url = load_config(CONFIG_DIR / 'secrets.yaml')['venera_leftovers_link']
-    collection_links = [f'{base_url}{collection}.html?warehouses%5B%5D=4&warehouses%5B%5D=80&warehouseType=many' for collection in collections]
+    collection_links = [f'{base_url}{collection}.html{warehouse}' for collection in collections]
     combined_df_list = asyncio.run(main(collection_links))
     combine_dataframes(combined_df_list)
