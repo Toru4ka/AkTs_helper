@@ -275,6 +275,6 @@ def run_generation():
     clear_folder(OUTPUT_FILES_DIR)
     collections = load_config(CONFIG_DIR / 'users_configs' / 'collections.yaml')['collections']
     base_url = load_config(CONFIG_DIR / 'secrets.yaml')['venera_leftovers_link']
-    collection_links = [f'{base_url}{collection}.html' for collection in collections]
+    collection_links = [f'{base_url}{collection}.html?warehouses%5B%5D=4&warehouses%5B%5D=80&warehouseType=many' for collection in collections]
     combined_df_list = asyncio.run(main(collection_links))
     combine_dataframes(combined_df_list)
