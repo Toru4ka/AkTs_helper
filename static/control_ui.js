@@ -122,49 +122,73 @@ document.getElementById("allWarehouseBtn").addEventListener("click", function() 
     downloadLeftovers('/venera-carpet-leftovers/all_warehouses');
 });
 
-// Функция для выгрузки остатков
-function downloadLeftovers(url) {
-    swal("Выгрузка остатков начата, подождите несколько секунд", { buttons: false, timer: 2000,});
-    fetch(url)
-        .then(response => {
-            if (response.ok) {
-                response.blob().then(blob => {
-                    const url = window.URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.style.display = 'none';
-                    a.href = url;
-                    a.download = 'leftovers.csv';
-                    document.body.appendChild(a);
-                    a.click();
-                    window.URL.revokeObjectURL(url);
+async function downloadLeftovers(apiUrl) {
+    // Показ уведомления о начале загрузки
+    swal("Выгрузка остатков начата, подождите несколько секунд", {
+        buttons: false,
+        timer: 2000,
+    });
 
-                    const audio = document.getElementById('success-sound');
-                    audio.currentTime = 0;
-                    audio.play();
+    try {
+        const response = await fetch(apiUrl);
 
-                    swal({
-                        title: 'Success!',
-                        text: 'File downloaded successfully!',
-                        icon: 'success',
-                        confirmButtonText: 'OK'
-                    });
-                });
-            } else {
-                swal({
-                    title: 'Error!',
-                    text: 'Failed to download the file.',
-                    icon: 'error',
-                    confirmButtonText: 'OK'
-                });
+        if (response.ok) {
+            // Получаем Blob (бинарные данные) из ответа
+            const blob = await response.blob();
+
+            // Получаем заголовок Content-Disposition
+            const disposition = response.headers.get('Content-Disposition');
+            let filename = 'downloaded_file.csv';  // Имя по умолчанию, если заголовка нет
+
+            // Извлечение имени файла из заголовка, убирая возможные кавычки
+            if (disposition && disposition.includes('filename=')) {
+                const matches = disposition.match(/filename="?([^"]+)"?/);
+                if (matches != null && matches[1]) {
+                    filename = matches[1];  // Извлекаем имя файла без кавычек
+                }
             }
-        })
-        .catch(error => {
-            console.error('Ошибка при скачивании файла:', error);
+
+            // Создаем ссылку для скачивания
+            const link = document.createElement('a');
+            link.href = window.URL.createObjectURL(blob);
+            link.download = filename;
+            link.style.display = 'none';  // скрываем ссылку
+
+            document.body.appendChild(link);
+            link.click();  // запускаем скачивание
+            window.URL.revokeObjectURL(link.href);  // освобождаем память
+
+            // Воспроизведение звука при успешной загрузке
+            const audio = document.getElementById('success-sound');
+            if (audio) {
+                audio.currentTime = 0;
+                audio.play();  // воспроизводим звук
+            }
+
+            // Показ уведомления об успешной загрузке
+            swal({
+                title: 'Success!',
+                text: 'Файл успешно скачан!',
+                icon: 'success',
+                confirmButtonText: 'OK',
+            });
+        } else {
+            // Уведомление об ошибке загрузки
             swal({
                 title: 'Error!',
-                text: 'Ошибка при скачивании файла.',
+                text: 'Не удалось скачать файл.',
                 icon: 'error',
-                confirmButtonText: 'OK'
+                confirmButtonText: 'OK',
             });
+        }
+    } catch (error) {
+        console.error('Ошибка при скачивании файла:', error);
+        // Уведомление об ошибке запроса
+        swal({
+            title: 'Error!',
+            text: 'Ошибка при скачивании файла.',
+            icon: 'error',
+            confirmButtonText: 'OK',
         });
+    }
 }

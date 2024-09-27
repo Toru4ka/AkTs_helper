@@ -5,60 +5,43 @@ import asyncio
 from leftovers.leftovers_async import run_generation
 from utils.file_utils import clear_folder
 from starlette.background import BackgroundTasks
+import utils.file_utils as utils
 
 router = APIRouter()
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 OUTPUT_FILES_DIR_LEFTOVERS = BASE_DIR / 'leftovers' / 'output_files'
+CONFIG_DIR = BASE_DIR / 'configs' / 'users_configs'
+@router.get('/venera-carpet-leftovers/{warehouse_name}')
+async def generate(warehouse_name: str, background_tasks: BackgroundTasks):
+    config = utils.load_config(CONFIG_DIR / 'warehouses.yaml') # Загрузка конфигурации из YAML файла
 
+    print(warehouse_name)
 
-@router.get('/venera-carpet-leftovers/mytishchi')
-async def generate(background_tasks: BackgroundTasks):
-    warehouse = "?warehouses%5B%5D=4"
+    if warehouse_name not in config['warehouses']:
+        raise HTTPException(status_code=404, detail="Warehouse not found")
+
+    warehouse_config = config['warehouses'][warehouse_name]
+
+    # Генерация строки запроса для склада
+    warehouse_query = f"?warehouses%5B%5D={warehouse_config['id']}"
+    if 'warehouseType' in warehouse_config:
+        warehouse_query += f"&warehouseType={warehouse_config['warehouseType']}"
+
     try:
-        await asyncio.to_thread(run_generation, warehouse)
-        output_file = OUTPUT_FILES_DIR_LEFTOVERS / 'leftovers.csv'
+        # Вызов функции для генерации CSV
+        await asyncio.to_thread(run_generation, warehouse_query, warehouse_name)
+
+        # Путь к файлу с результатом
+        output_file = OUTPUT_FILES_DIR_LEFTOVERS / f'{warehouse_name}_leftovers.csv'
+
         if output_file.exists():
+            # Очистка папки после генерации
             background_tasks.add_task(clear_folder, OUTPUT_FILES_DIR_LEFTOVERS)
             return FileResponse(path=output_file,
-                                filename='leftovers.csv',
+                                filename=f'{warehouse_name}_leftovers.csv',
                                 media_type='text/csv')
         else:
             raise HTTPException(status_code=500, detail="File not found after processing")
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-
-
-@router.get('/venera-carpet-leftovers/vyoshki')
-async def generate(background_tasks: BackgroundTasks):
-    warehouse = "?warehouses%5B%5D=80"
-    try:
-        await asyncio.to_thread(run_generation, warehouse)
-        output_file = OUTPUT_FILES_DIR_LEFTOVERS / 'leftovers.csv'
-        if output_file.exists():
-            background_tasks.add_task(clear_folder, OUTPUT_FILES_DIR_LEFTOVERS)
-            return FileResponse(path=output_file,
-                                filename='leftovers.csv',
-                                media_type='text/csv')
-        else:
-            raise HTTPException(status_code=500, detail="File not found after processing")
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-@router.get('/venera-carpet-leftovers/all_warehouses')
-async def generate(background_tasks: BackgroundTasks):
-    warehouse = "?warehouses%5B%5D=4&warehouses%5B%5D=80&warehouseType=many"
-    try:
-        await asyncio.to_thread(run_generation, warehouse)
-        output_file = OUTPUT_FILES_DIR_LEFTOVERS / 'leftovers.csv'
-        if output_file.exists():
-            background_tasks.add_task(clear_folder, OUTPUT_FILES_DIR_LEFTOVERS)
-            return FileResponse(path=output_file,
-                                filename='leftovers.csv',
-                                media_type='text/csv')
-        else:
-            raise HTTPException(status_code=500, detail="File not found after processing")
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-

@@ -9,7 +9,7 @@ import re
 import fake_useragent
 import logging
 import colorlog
-from utils.file_utils import clear_folder
+import utils.file_utils as utils
 
 pd.set_option('display.max_rows', 1000,
               'display.max_columns', 1000,
@@ -40,13 +40,9 @@ console_handler.setFormatter(formatter)
 logging.basicConfig(level=logging.INFO, handlers=[console_handler])
 logger = logging.getLogger(__name__)
 
-def load_config(config_file):
-    with open(config_file, 'r') as file:
-        config = yaml.safe_load(file)
-    return config
 
 async def venera_auth(config_file):
-    secrets = load_config(config_file)
+    secrets = utils.load_config(config_file)
     session = aiohttp.ClientSession()
     user = fake_useragent.UserAgent().random
     headers = {'user-agent': user}
@@ -57,6 +53,7 @@ async def venera_auth(config_file):
     async with session.post(secrets['auth_link'], data=data, headers=headers) as response:
         await response.text()
     return session
+
 
 def clean_cell(cell):
     if pd.isna(cell) or cell == '':
@@ -209,8 +206,8 @@ def subtract_one_from_column(df, column_name):
     return df
 
 def create_barcode(df, collection, collection_url):
-    collection_name = collection_url.replace(load_config(CONFIG_DIR / 'secrets.yaml')['venera_leftovers_link'], '').replace('.html', '')
-    pattern_replacements = load_config(CONFIG_DIR / 'users_configs' / 'pattern_replacements.yaml')['patterns']
+    collection_name = collection_url.replace(utils.load_config(CONFIG_DIR / 'secrets.yaml')['venera_leftovers_link'], '').replace('.html', '')
+    pattern_replacements = utils.load_config(CONFIG_DIR / 'users_configs' / 'pattern_replacements.yaml')['patterns']
     df_melted = df.melt(id_vars=['Рис.', 'Форма', 'Цвет'], var_name='Размер', value_name='кол-во')
     df_melted['Форма'] = list(map(lambda x: transform_form_to_barcode_form(x), df_melted['Форма']))
     df_melted['Размер'] = list(map(lambda x: transform_size(x), df_melted['Размер']))
@@ -258,7 +255,7 @@ async def main(urls):
     return combined_df_list
 
 def remove_blacklisted_barcodes(df):
-    blacklist = load_config(CONFIG_DIR / 'users_configs' / 'barcode_blacklist.yaml')
+    blacklist = utils.load_config(CONFIG_DIR / 'users_configs' / 'barcode_blacklist.yaml')
     barcodes = blacklist.get('barcodes', [])
     if not barcodes:
         return df
@@ -269,12 +266,12 @@ def combine_dataframes(df_list):
     combined_df = pd.concat(df_list, ignore_index=True)
     combined_df = combined_df.set_axis(['carpet', 'count'], axis=1)
     combined_df = remove_blacklisted_barcodes(combined_df)
-    combined_df.to_csv(OUTPUT_FILES_DIR / 'leftovers.csv', index=False, sep=';')
+    return combined_df
 
-def run_generation(warehouse):
-    clear_folder(OUTPUT_FILES_DIR)
-    collections = load_config(CONFIG_DIR / 'users_configs' / 'collections.yaml')['collections']
-    base_url = load_config(CONFIG_DIR / 'secrets.yaml')['venera_leftovers_link']
-    collection_links = [f'{base_url}{collection}.html{warehouse}' for collection in collections]
+def run_generation(warehouse_query, warehouse_name):
+    utils.clear_folder(OUTPUT_FILES_DIR)
+    collections = utils.load_config(CONFIG_DIR / 'users_configs' / 'collections.yaml')['collections']
+    base_url = utils.load_config(CONFIG_DIR / 'secrets.yaml')['venera_leftovers_link']
+    collection_links = [f'{base_url}{collection}.html{warehouse_query}' for collection in collections]
     combined_df_list = asyncio.run(main(collection_links))
-    combine_dataframes(combined_df_list)
+    combine_dataframes(combined_df_list).to_csv(OUTPUT_FILES_DIR / f'{warehouse_name}_leftovers.csv', index=False, sep=';')
