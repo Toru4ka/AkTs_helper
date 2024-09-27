@@ -1,0 +1,11 @@
+warehouses:
+  mytishchi:
+    id: "4"
+    description: "Мытщи склад"
+  vyoshki:
+    id: "80"
+    description: "Вёшки склад"
+  all_warehouses:
+    id: "4,80"
+    warehouseType: "many"
+    description: "Все склады"

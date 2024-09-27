@@ -2,7 +2,7 @@ from fastapi import UploadFile
 from pathlib import Path
 import logging
 import shutil
-
+import yaml
 
 async def save_uploaded_file(file: UploadFile, destination: Path):
     with open(destination, 'wb') as f:
@@ -18,9 +18,14 @@ async def delete_file(file_path: Path):
 
 
 def clear_folder(output_folder):
-    # Удаляем все файлы и папки в указанной директории
     for item in output_folder.iterdir():
         if item.is_dir():
             shutil.rmtree(item)
         else:
             item.unlink()
+
+
+def load_config(config_file):
+    with open(config_file, 'r') as file:
+        config = yaml.safe_load(file)
+    return config
