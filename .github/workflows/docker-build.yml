@@ -60,5 +60,5 @@ jobs:
           ssh -o StrictHostKeyChecking=no ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_IP }} << 'EOF'
             # Define container name
             IMAGE_NAME="toru4ka/akts_helper:${{ env.VERSION }}"
-            docker stop akts_helper && docker rm akts_helper && docker run -d --name akts_helper -p 8080:8080 -e VENERA_LOGIN=${{ secrets.VENERA_LOGIN }} -e VENERA_PASSWORD=${{ secrets.VENERA_PASSWORD }} $IMAGE_NAME
+            docker ps -aq -f name=akts_helper | grep -q . && docker stop akts_helper && docker rm akts_helper || true && docker run -d --name akts_helper -p 8080:8080 -e VENERA_LOGIN=${{ secrets.VENERA_LOGIN }} -e VENERA_PASSWORD=${{ secrets.VENERA_PASSWORD }} $IMAGE_NAME
           EOF
