@@ -118,6 +118,14 @@ document.getElementById("vyoshkiBtn").addEventListener("click", function() {
     downloadLeftovers('/venera-carpet-leftovers/vyoshki');
 });
 
+document.getElementById("vyoshki_ltBtn").addEventListener("click", function() {
+    downloadLeftovers('/venera-carpet-leftovers/vyoshki_lt');
+});
+
+document.getElementById("all_vyoshkiBtn").addEventListener("click", function() {
+    downloadLeftovers('/venera-carpet-leftovers/all_vyoshki');
+});
+
 document.getElementById("allWarehouseBtn").addEventListener("click", function() {
     downloadLeftovers('/venera-carpet-leftovers/all_warehouses');
 });
