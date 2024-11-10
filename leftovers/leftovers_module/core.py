@@ -10,10 +10,11 @@ import fake_useragent
 import logging
 import utils.file_utils as utils  # Убедитесь, что этот модуль определен
 from yarl import URL
-
+from dotenv import load_dotenv
+import os
 from routes.home import index
 
-# import pytest
+load_dotenv()
 
 pd.set_option('display.max_rows', 1000,
               'display.max_columns', 1000,
@@ -45,8 +46,8 @@ async def venera_auth(config_file):
 
     # Шаг 2: Выполняем POST-запрос для авторизации, включая CSRF-токен
     data = {
-        '_username': secrets['login'],
-        '_password': secrets['password'],
+        '_username': os.getenv("VENERA_LOGIN"),
+        '_password': os.getenv("VENERA_PASSWORD"),
         '_csrf_token': csrf_token
     }
 
