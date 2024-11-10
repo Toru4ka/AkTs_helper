@@ -1,12 +1,12 @@
 Форма:
  прямоугольник:
-    annotation_form: Прямоугольный
+    annotation_form: прямоугольник
     barcode_form: ST
  круг:
-    annotation_form: Круглый
+    annotation_form: круг
     barcode_form: KG
  овал:
-    annotation_form: Овальный
+    annotation_form: овал
     barcode_form: OV
 
 Страна:

@@ -31,6 +31,8 @@
                     <p>Выберите склад для выгрузки остатков:</p>
                     <button id="mytishchiBtn" class="btn btn-primary btn-block">Остатки со склада Мытищи</button>
                     <button id="vyoshkiBtn" class="btn btn-primary btn-block">Остатки со склада Вёшки</button>
+                    <button id="vyoshki_ltBtn" class="btn btn-primary btn-block">Остатки со склада Вёшки-ЛТ</button>
+                    <button id="all_vyoshkiBtn" class="btn btn-primary btn-block">Остатки со складов Вёшки и Вёшки-ЛТ</button>
                     <button id="allWarehouseBtn" class="btn btn-success btn-block">Остатки со всех складов</button>
                 </div>
             </div>
@@ -100,6 +102,10 @@
         </div>
     </div>
 
+    <div id="versionDisplay" style="position: fixed; bottom: 10px; left: 10px; background-color: rgba(248,249,250,0); padding: 5px 10px; border-radius: 5px; font-size: 14px; box-shadow: 0 0 5px rgba(0,0,0,0.1);">
+        Version: Loading...
+    </div>
+
     <!-- Подключаем зависимости -->
     <script src="https://unpkg.com/sweetalert/dist/sweetalert.min.js"></script>
 
@@ -107,7 +113,6 @@
     <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.2/dist/umd/popper.min.js"></script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
     <script src="/static/control_ui.js"></script>
-    <!-- <script src="/static/scripts.js"></script> -->
-    <!-- <script src="/static/leftovers.js"></script> -->
+    <script src="/static/version.js"></script>
 </body>
 </html>

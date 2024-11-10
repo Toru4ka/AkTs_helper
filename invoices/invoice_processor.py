@@ -3,8 +3,9 @@ import re
 from pathlib import Path
 import shutil
 from zipfile import ZipFile
-from leftovers.leftovers_async import remove_after_last_digit
-from leftovers.leftovers_async import transform_color
+# from leftovers.leftovers_async import remove_after_last_digit
+# from leftovers.leftovers_async import transform_color
+from leftovers.leftovers_module import core as leftovers_module_core
 import utils.file_utils as utils
 
 pd.set_option('display.max_rows', 1000,
@@ -151,11 +152,11 @@ def process_file(input_path, output_path):
     df['Номенклатура'] = df['Номенклатура'].apply(lambda x: x.split(', '))
     patterns = utils.load_config(CONFIG_DIR / 'users_configs' / 'pattern_replacements.yaml')['patterns']
     df['Номенклатура'] = df['Номенклатура'].apply(lambda x: replace_pattern(x, patterns))
-    df['Номенклатура'] = df['Номенклатура'].apply(lambda x: [x[0], remove_after_last_digit(x[1])] + x[2:])
+    df['Номенклатура'] = df['Номенклатура'].apply(lambda x: [x[0], leftovers_module_core.remove_after_last_digit(x[1])] + x[2:])
     df['Номенклатура'] = df.apply(update_nomenclature, axis=1)
     df = df.apply(deleting_packaging_count_value, axis=1)
     df = df.apply(calculate_price, axis=1)
     df['Номенклатура'] = df['Номенклатура'].apply(lambda x: x[:-2] + [trim_carpets_forms(x[-2])] + [x[-1]])
-    df['Номенклатура'] = df['Номенклатура'].apply(lambda x: x[:-1] + [transform_color(x[-1])])
+    df['Номенклатура'] = df['Номенклатура'].apply(lambda x: x[:-1] + [leftovers_module_core.transform_color(x[-1])])
     df['Номенклатура'] = df['Номенклатура'].apply(lambda x: create_akts_barcode(x))
     df.to_excel(output_path, index=False)

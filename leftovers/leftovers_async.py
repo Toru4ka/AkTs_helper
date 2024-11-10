@@ -29,6 +29,7 @@ log_colors_config = {
     'ERROR': 'red',
     'CRITICAL': 'bold_red',
 }
+
 formatter = colorlog.ColoredFormatter(
     '%(log_color)s%(asctime)s - %(levelname)s - %(message)s',
     log_colors=log_colors_config
@@ -52,6 +53,7 @@ async def venera_auth(config_file):
     }
     async with session.post(secrets['auth_link'], data=data, headers=headers) as response:
         await response.text()
+
     return session
 
 
@@ -62,11 +64,13 @@ def clean_cell(cell):
         return cell.split('  / В корзину')[0]
     return cell
 
+
 async def get_size_grid_page(url, session):
     async with session.get(url) as response:
         content = await response.text()
     soup = BeautifulSoup(content, 'lxml')
     return soup
+
 
 def get_size_grid_table(soup):
     table = soup.find('table')
@@ -84,8 +88,8 @@ def get_size_grid_table(soup):
             pass
     if 'Unnamed: 0' in df_cleaned.columns:
         df_cleaned = df_cleaned.drop(columns=['Unnamed: 0'])
-    print(df_cleaned)
     return df_cleaned
+
 
 def multiply_packaging_columns(df):
     pattern = re.compile(r'упаковка по (\d+) шт\.')
@@ -95,6 +99,7 @@ def multiply_packaging_columns(df):
             factor = int(match.group(1))
             df[column] = df[column].apply(lambda x: x * factor if pd.notna(x) else x)
     return df
+
 
 def merge_duplicate_sizes(df):
     columns_to_check = df.columns[3:]
@@ -117,10 +122,12 @@ def merge_duplicate_sizes(df):
 
     return df
 
+
 def remove_samples(df):
     df['Рис.'] = df['Рис.'].astype(str)
     df['Форма'] = df['Форма'].astype(str)
     return df[~df['Рис.'].str.contains('Образец', na=False) & ~df['Форма'].str.contains('образец', na=False)]
+
 
 def remove_after_last_digit(s):
     pattern = r'^(.*)[a-zA-Z]$'
@@ -130,9 +137,11 @@ def remove_after_last_digit(s):
     else:
         return s
 
+
 def replace_values(df, column, replacements):
     df[column] = df[column].replace(replacements)
     return df
+
 
 def transform_form_to_barcode_form(carpet_form):
     with open(CONFIG_DIR / 'users_configs' / 'carpet_properties.yaml', 'r') as file:
@@ -141,6 +150,7 @@ def transform_form_to_barcode_form(carpet_form):
     if carpet_form in carpet_forms:
         carpet_form = carpet_forms[carpet_form]['barcode_form']
     return carpet_form
+
 
 def transform_size(size):
     size_parts = size.split('x')
@@ -155,9 +165,11 @@ def transform_size(size):
     transformed_size = width + height
     return transformed_size
 
+
 def get_size_grid_collection_name(soup):
     collection_name = soup.find_all('span', itemprop="name")[-1].text
     return collection_name
+
 
 def transform_color(s):
     try:
@@ -167,14 +179,17 @@ def transform_color(s):
         return s
     return s
 
+
 def insert_name_of_collection_column(df, collection_name):
     df.insert(0, 'Коллекция', collection_name[:2])
     return df
+
 
 def transform_quantity_with_wight(df, mask, limit):
     df.loc[mask, 'кол-во'] -= limit
     df['кол-во'] = df['кол-во'].clip(lower=0)
     return df
+
 
 def transform_quantity_with_limits(df, collection_name):
     try:
@@ -201,9 +216,11 @@ def transform_quantity_with_limits(df, collection_name):
         df['кол-во'] = df['кол-во'].clip(lower=0)
     return df
 
+
 def subtract_one_from_column(df, column_name):
     df[column_name] = df[column_name] - 1
     return df
+
 
 def create_barcode(df, collection, collection_url):
     collection_name = collection_url.replace(utils.load_config(CONFIG_DIR / 'secrets.yaml')['venera_leftovers_link'], '').replace('.html', '')
@@ -230,6 +247,7 @@ def create_barcode(df, collection, collection_url):
     df_melted = df_melted[['barcode', 'кол-во']]
     return df_melted
 
+
 async def process_collection(url_size_grid_page, session, combined_df_list):
     try:
         size_grid_soup = await get_size_grid_page(url_size_grid_page, session)
@@ -244,6 +262,7 @@ async def process_collection(url_size_grid_page, session, combined_df_list):
     except Exception as e:
         logger.error(f'Error processing collection {url_size_grid_page}: {str(e)}')
 
+
 async def main(urls):
     session = await venera_auth(CONFIG_DIR / 'secrets.yaml')
     combined_df_list = []
@@ -254,6 +273,7 @@ async def main(urls):
         await session.close()
     return combined_df_list
 
+
 def remove_blacklisted_barcodes(df):
     blacklist = utils.load_config(CONFIG_DIR / 'users_configs' / 'barcode_blacklist.yaml')
     barcodes = blacklist.get('barcodes', [])
@@ -262,11 +282,13 @@ def remove_blacklisted_barcodes(df):
     df_filtered = df[~df['carpet'].isin(barcodes)]
     return df_filtered
 
+
 def combine_dataframes(df_list):
     combined_df = pd.concat(df_list, ignore_index=True)
     combined_df = combined_df.set_axis(['carpet', 'count'], axis=1)
     combined_df = remove_blacklisted_barcodes(combined_df)
     return combined_df
+
 
 def run_generation(warehouse_query, warehouse_name):
     utils.clear_folder(OUTPUT_FILES_DIR)
