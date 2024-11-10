@@ -59,20 +59,6 @@ jobs:
         run: |
           ssh -o StrictHostKeyChecking=no ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_IP }} << 'EOF'
             # Define container name
-            CONTAINER_NAME="akts_helper"
             IMAGE_NAME="toru4ka/akts_helper:${{ env.VERSION }}"
-      
-            # Stop old container if it's running
-            if [ "$(docker ps -q -f name=$CONTAINER_NAME)" ]; then
-              echo "Stopping old container..."
-              docker stop $CONTAINER_NAME
-            fi
-      
-            # Start a new container with the updated image
-            echo "Starting new container..."
-            docker run -d --name akts_helper -e VENERA_LOGIN=${{ secrets.VENERA_LOGIN }} -e VENERA_PASSWORD=${{ secrets.VENERA_PASSWORD }} -p 8080:8080 my_image
-      
-            # Optional: list all containers for verification
-            echo "Listing all containers:"
-            docker ps -a
+            docker stop akts_helper && docker rm akts_helper && docker run -d --name akts_helper -p 8080:8080 -e VENERA_LOGIN=${{ secrets.VENERA_LOGIN }} -e VENERA_PASSWORD=${{ secrets.VENERA_PASSWORD }} $IMAGE_NAME
           EOF
