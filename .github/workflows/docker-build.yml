@@ -54,6 +54,12 @@ jobs:
         uses: webfactory/ssh-agent@v0.5.3
         with:
           ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+          
+      - name: Replace environment variables in YAML template
+        run: |
+          # Заменяем переменные окружения в шаблоне config_template.yaml
+          envsubst < config_template.yaml > config.yaml
+          cat config.yaml  # Для отладки: выводим результат
 
       - name: Deploy Docker container
         run: |
