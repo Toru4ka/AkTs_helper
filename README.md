@@ -14,3 +14,4 @@ docker run -d --name akts_helper -p 8080:8080 toru4ka/akts_helper:ver
 ```shell
 docker stop akts_helper && docker rm akts_helper && docker run -d --name akts_helper -p 8080:8080 toru4ka/akts_helper:ver
 ```
+

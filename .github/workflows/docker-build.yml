@@ -55,8 +55,25 @@ jobs:
         with:
           ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
 
-      - name: Pull Docker image on the server
+      - name: Deploy Docker container
         run: |
           ssh -o StrictHostKeyChecking=no ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_IP }} << 'EOF'
-            docker pull toru4ka/akts_helper:${{ env.VERSION }}
+            # Define container name
+            CONTAINER_NAME="akts_helper"
+            IMAGE_NAME="toru4ka/akts_helper:${{ env.VERSION }}"
+
+            # Stop and remove old container if it exists
+            if [ \$(docker ps -aq -f name=\$CONTAINER_NAME) ]; then
+              echo "Stopping and removing old container..."
+              docker stop \$CONTAINER_NAME
+              docker rm \$CONTAINER_NAME
+            fi
+
+            # Start a new container with the updated image
+            echo "Starting new container..."
+            docker run -d --name \$CONTAINER_NAME -p 8080:8080 \$IMAGE_NAME
+
+            # Optional: list all containers for verification
+            echo "Listing running containers:"
+            docker ps
           EOF
