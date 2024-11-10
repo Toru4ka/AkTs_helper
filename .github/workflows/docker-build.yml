@@ -61,19 +61,18 @@ jobs:
             # Define container name
             CONTAINER_NAME="akts_helper"
             IMAGE_NAME="toru4ka/akts_helper:${{ env.VERSION }}"
-
-            # Stop and remove old container if it exists
-            if [ \$(docker ps -aq -f name=\$CONTAINER_NAME) ]; then
-              echo "Stopping and removing old container..."
-              docker stop \$CONTAINER_NAME
-              docker rm \$CONTAINER_NAME
+      
+            # Stop old container if it's running
+            if [ "$(docker ps -q -f name=$CONTAINER_NAME)" ]; then
+              echo "Stopping old container..."
+              docker stop $CONTAINER_NAME
             fi
-
+      
             # Start a new container with the updated image
             echo "Starting new container..."
-            docker run -d --name \$CONTAINER_NAME -p 8080:8080 \$IMAGE_NAME
-
+            docker run -d --name akts_helper -e VENERA_LOGIN=${{ secrets.VENERA_LOGIN }} -e VENERA_PASSWORD=${{ secrets.VENERA_PASSWORD }} -p 8080:8080 my_image
+      
             # Optional: list all containers for verification
-            echo "Listing running containers:"
-            docker ps
+            echo "Listing all containers:"
+            docker ps -a
           EOF
