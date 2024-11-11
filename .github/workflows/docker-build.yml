@@ -58,7 +58,25 @@ jobs:
       - name: Deploy Docker container
         run: |
           ssh -o StrictHostKeyChecking=no ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_IP }} << 'EOF'
-            # Define container name
+            # Определяем имя контейнера и образа
+            CONTAINER_NAME="akts_helper"
             IMAGE_NAME="toru4ka/akts_helper:${{ env.VERSION }}"
-            docker ps -aq -f name=akts_helper | grep -q . && docker stop akts_helper && docker rm akts_helper || true && docker run -d --name akts_helper -p 8080:8080 -e VENERA_LOGIN=${{ secrets.VENERA_LOGIN }} -e VENERA_PASSWORD=${{ secrets.VENERA_PASSWORD }} $IMAGE_NAME
+          
+            # Проверяем, запущен ли контейнер
+            if docker ps -q -f name=$CONTAINER_NAME | grep -q .; then
+              echo "Stopping and removing existing container $CONTAINER_NAME..."
+              docker stop $CONTAINER_NAME
+              docker rm $CONTAINER_NAME
+            elif docker ps -aq -f name=$CONTAINER_NAME | grep -q .; then
+              echo "Removing existing stopped container $CONTAINER_NAME..."
+              docker rm $CONTAINER_NAME
+            fi
+          
+            # Запускаем новый контейнер
+            echo "Starting new container $CONTAINER_NAME with image $IMAGE_NAME..."
+            docker run -d --name $CONTAINER_NAME -p 8080:8080 \
+              -e VENERA_LOGIN=${{ secrets.VENERA_LOGIN }} \
+              -e VENERA_PASSWORD=${{ secrets.VENERA_PASSWORD }} \
+              $IMAGE_NAME
           EOF
+
