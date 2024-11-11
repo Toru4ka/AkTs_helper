@@ -1,7 +1,7 @@
 barcode_blacklist.yaml: "Список исключения штрихкодов"
 carpet_properties.yaml: "Свойства ковра"
 collections.yaml: "Коллекции для парсинга остатков"
-collections_all.yaml: "Все коллекции"
+#collections_all.yaml: "Все коллекции"
 collections_limits.yaml: "Лимиты по коллекциям"
 ozon.yaml: "Настройки парсинга под OZON"
 pattern_replacements.yaml: "Замены цвета в штрихкоде"
