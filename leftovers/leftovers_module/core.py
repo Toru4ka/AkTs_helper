@@ -117,7 +117,7 @@ async def fetch_table_page(session, url):
     async with session.get(url) as response:
         if response.status == 200:
             html = await response.text()
-            logger.info(f"{html}")
+            logger.debug(f"{html}")
             logger.debug(f"Страница таблицы загружена: {response.url}")
             return html
         else:
@@ -140,14 +140,11 @@ async def get_table_df_and_collection_name(session, collection_url, warehouses):
         table = soup.find('table')
         if table:
             logger.debug("Таблица найдена!")
-            # if table is None:
-            #     return None
-            #     # raise ValueError("No tables found")
             table_str = str(table)
             tables = pd.read_html(StringIO(table_str))
             df = tables[0]
             logger.debug(f'size_grid_table:\n {df} \n {collection_name}')
-            if len(df) < 3:
+            if len(df) < 1:
                 logger.warning(f"There are no carpets in the collection table: {collection_url} ")
                 return None
             return df, collection_name
