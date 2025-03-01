@@ -38,7 +38,7 @@ formatter = colorlog.ColoredFormatter(
 console_handler = logging.StreamHandler()
 console_handler.setFormatter(formatter)
 
-logging.basicConfig(level=logging.INFO, handlers=[console_handler])
+logging.basicConfig(level=logging.DEBUG, handlers=[console_handler])
 logger = logging.getLogger(__name__)
 
 

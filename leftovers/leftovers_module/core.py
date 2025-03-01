@@ -12,6 +12,7 @@ import utils.file_utils as utils  # Убедитесь, что этот моду
 from yarl import URL
 from dotenv import load_dotenv
 import os
+import colorlog
 from routes.home import index
 
 load_dotenv()
@@ -26,38 +27,73 @@ CONFIG_DIR = BASE_DIR / 'configs'
 OUTPUT_FILES_DIR = BASE_DIR / 'leftovers' / 'output_files'
 OUTPUT_FILES_DIR.mkdir(exist_ok=True)
 
-logger = logging.getLogger("uvicorn")
+# logger = logging.getLogger("uvicorn")
+log_colors_config = {
+    'DEBUG': 'white',
+    'INFO': 'white',
+    'WARNING': 'yellow',
+    'ERROR': 'red',
+    'CRITICAL': 'bold_red',
+}
+
+formatter = colorlog.ColoredFormatter(
+    '%(log_color)s%(asctime)s - %(levelname)s - %(message)s',
+    log_colors=log_colors_config
+)
+
+console_handler = logging.StreamHandler()
+console_handler.setFormatter(formatter)
+
+logging.basicConfig(level=logging.INFO, handlers=[console_handler])
+logger = logging.getLogger(__name__)
 
 
 # получение пользовательской сессии на сайте путем аутентификации
 async def venera_auth(config_file):
+    # Загружаем конфигурацию
     secrets = utils.load_config(config_file)
+    auth_link = secrets['auth_link']  # например, "https://venera-carpet.ru/user/auth.html"
+
+    # Создаём сессию для сохранения cookies и управления редиректами
     session = aiohttp.ClientSession()
+
+    # Формируем заголовки, включая user-agent, соответствующий браузерному
     user = fake_useragent.UserAgent().random
-    headers = {'user-agent': user}
+    headers = {
+        'User-Agent': user,
+        'Accept': "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        'Content-Type': "application/x-www-form-urlencoded",
+        'Origin': "https://venera-carpet.ru",
+        'Referer': auth_link,
+    }
 
-    # Шаг 1: Выполняем GET-запрос для получения CSRF-токена
-    async with session.get(secrets['auth_link'], headers=headers) as response:
+    # Шаг 1: GET-запрос для получения страницы авторизации и извлечения CSRF-токена
+    async with session.get(auth_link, headers=headers) as response:
         html = await response.text()
-        # Извлекаем CSRF-токен из HTML
         soup = BeautifulSoup(html, 'html.parser')
-        csrf_token = soup.find('input', {'name': '_csrf_token'})['value']
-        logger.debug(f"CSRF token: {csrf_token}")
+        csrf_input = soup.find('input', {'name': '_csrf_token'})
+        if csrf_input is None:
+            logger.error("CSRF токен не найден на странице авторизации")
+            await session.close()
+            return None
+        csrf_token = csrf_input.get('value')
+        logger.info(f"Получен CSRF токен: {csrf_token}")
 
-    # Шаг 2: Выполняем POST-запрос для авторизации, включая CSRF-токен
+    # Шаг 2: POST-запрос для авторизации с использованием CSRF-токена и учётных данных
     data = {
         '_username': os.getenv("VENERA_LOGIN"),
         '_password': os.getenv("VENERA_PASSWORD"),
         '_csrf_token': csrf_token
     }
 
-    async with session.post(secrets['auth_link'], data=data, headers=headers) as response:
-        # Выводим статус ответа и текст ответа для отладки
-        logger.info(f"Response status of authentication: {response.status}")  # Вывод статуса
-        logger.debug(f"Response text: {await response.text()}")  # Вывод текста ответа
+    async with session.post(auth_link, data=data, headers=headers) as response:
+        logger.info(f"Статус ответа после авторизации: {response.status}")
+        text = await response.text()
+        logger.debug(f"Текст ответа: {text}")
 
-    return session  # Возвращаем сессию и ответ для проверки
-
+    # При успешной авторизации сервер выполняет редиректы,
+    # которые aiohttp обрабатывает автоматически, и сессия сохраняет cookies.
+    return session  # сессия возвращается для дальнейших запросов от имени авторизованного пользователя
 
 async def set_warehouses_filters(session, categoryId, warehouses):
     url = "https://venera-carpet.ru/category/all-ajax.html"
@@ -81,6 +117,7 @@ async def fetch_table_page(session, url):
     async with session.get(url) as response:
         if response.status == 200:
             html = await response.text()
+            logger.info(f"{html}")
             logger.debug(f"Страница таблицы загружена: {response.url}")
             return html
         else:
@@ -90,6 +127,7 @@ async def fetch_table_page(session, url):
 
 async def get_table_df_and_collection_name(session, collection_url, warehouses):
     # 1. Применяем фильтры
+    logger.debug(f'session = {session}, collection_url = {collection_url}, warehouses = {warehouses}')
     logger.debug(f'Куки перед фильтром: {session.cookie_jar.filter_cookies("https://venera-carpet.ru")}')
     collection_id = collection_url.replace(utils.load_config(CONFIG_DIR / 'secrets.yaml')['venera_leftovers_link'], '').replace('.html', '').split('_')[-1]
     logger.debug(f'{collection_id}')
@@ -102,9 +140,9 @@ async def get_table_df_and_collection_name(session, collection_url, warehouses):
         table = soup.find('table')
         if table:
             logger.debug("Таблица найдена!")
-            if table is None:
-                return None
-                # raise ValueError("No tables found")
+            # if table is None:
+            #     return None
+            #     # raise ValueError("No tables found")
             table_str = str(table)
             tables = pd.read_html(StringIO(table_str))
             df = tables[0]
