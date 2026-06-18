@@ -2,6 +2,7 @@ import pandas as pd
 import re
 from pathlib import Path
 import shutil
+import tempfile
 from zipfile import ZipFile
 # from leftovers.leftovers_async import remove_after_last_digit
 # from leftovers.leftovers_async import transform_color
@@ -20,10 +21,26 @@ OUTPUT_FILES_DIR.mkdir(exist_ok=True)
 INPUT_FILES_DIR = BASE_DIR / 'invoices' / 'input_files'
 INPUT_FILES_DIR.mkdir(exist_ok=True)
 
+REQUIRED_COLUMNS = {
+    'Номенклатура',
+    'Ширина',
+    'Длина',
+    'Количество, шт',
+    'Штрихкод',
+    'Сумма',
+}
+
+
+def normalize_column_name(value):
+    if pd.isna(value):
+        return value
+    if isinstance(value, str):
+        return value.replace('\xa0', ' ').strip()
+    return value
+
+
 def fix_and_resave_excel(input_path):
-    # Создаем временную папку
-    tmp_folder = Path('temp_folder')
-    tmp_folder.mkdir(exist_ok=True)
+    tmp_folder = Path(tempfile.mkdtemp(prefix='invoice_excel_fix_'))
     try:
         # Распаковываем excel как zip в нашу временную папку
         with ZipFile(input_path, 'r') as excel_container:
@@ -38,11 +55,11 @@ def fix_and_resave_excel(input_path):
             wrong_file_path.rename(correct_file_path)
 
         # Запаковываем excel обратно в zip
-        output_zip_path = tmp_folder.parent / 'tempfile.zip'
-        shutil.make_archive(output_zip_path.stem, 'zip', tmp_folder)
+        output_zip_path = tmp_folder.parent / 'tempfile'
+        shutil.make_archive(str(output_zip_path), 'zip', tmp_folder)
 
         # Переименовываем обратно в исходный файл
-        output_zip_path.with_suffix('.zip').rename(input_path)
+        output_zip_path.with_suffix('.zip').replace(input_path)
 
         print(f"Файл успешно пересохранен как {input_path}.")
     except Exception as e:
@@ -56,7 +73,7 @@ def read_excel_with_fix(input_path, **kwargs):
     input_path = Path(input_path)
     try:
         # Попытка чтения файла с использованием pandas
-        df = pd.read_excel(input_path, skiprows=kwargs['skiprows'])
+        df = pd.read_excel(input_path, **kwargs)
         print("Файл успешно прочитан с использованием pandas.")
         return df
     except KeyError as e:
@@ -66,18 +83,31 @@ def read_excel_with_fix(input_path, **kwargs):
             fix_and_resave_excel(input_path)
             try:
                 # Повторная попытка чтения пересохраненного файла
-                df = pd.read_excel(input_path, skiprows=kwargs['skiprows'])
+                df = pd.read_excel(input_path, **kwargs)
                 print("Файл успешно прочитан с использованием pandas после пересохранения.")
                 return df
             except Exception as read_error:
                 print(f"Ошибка при чтении пересохраненного файла: {read_error}")
-                return None
+                raise
         else:
             print(f"Обнаружена ошибка KeyError: {e}")
-            return None
+            raise
     except Exception as e:
         print(f"Обнаружена ошибка при чтении файла: {e}")
-        return None
+        raise
+
+
+def detect_header_row(input_path, max_rows=50):
+    preview = read_excel_with_fix(input_path, header=None, nrows=max_rows)
+
+    for index, row in preview.iterrows():
+        values = {normalize_column_name(value) for value in row.dropna().tolist()}
+        if REQUIRED_COLUMNS.issubset(values):
+            return index
+
+    raise ValueError(
+        f"Не удалось найти строку заголовков с колонками: {', '.join(sorted(REQUIRED_COLUMNS))}"
+    )
 
 
 def split_string(df, col):
@@ -142,8 +172,15 @@ def replace_pattern(nomenclature, patterns):
 
 
 def process_file(input_path, output_path):
-    df = read_excel_with_fix(input_path, skiprows=6)
+    header_row = detect_header_row(input_path)
+    df = read_excel_with_fix(input_path, skiprows=header_row)
+    df.columns = [normalize_column_name(col) for col in df.columns]
     df.drop(columns=[col for col in df.columns if col.startswith('Unnamed:')], inplace=True)
+
+    missing_columns = REQUIRED_COLUMNS - set(df.columns)
+    if missing_columns:
+        raise ValueError(f"В файле не найдены колонки: {', '.join(sorted(missing_columns))}")
+
     df.dropna(subset=['Ширина'], inplace=True)
     df['Штрихкод'] = df['Штрихкод'].astype(pd.Int64Dtype())
     df = split_string(df, 'Номенклатура')
